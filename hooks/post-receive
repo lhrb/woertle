@@ -1,6 +1,7 @@
 #!/bin/sh
-echo "merge into idle"
-git merge main
+echo "================================================================"
+echo "BLOCKING MAIN BRANCH"
+git checkout main
 
 cd ../
 echo "================================================================"
@@ -34,3 +35,7 @@ echo ""
 echo "================================================================"
 echo "DEPLOY NEW BUILD"
 java -jar target/woertle.jar &
+echo "================================================================"
+echo "CHECKOUT IDLE BRANCH"
+cd .git/
+git checkout idle
