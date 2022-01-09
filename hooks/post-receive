@@ -2,6 +2,7 @@
 cd ../
 echo "merge into idle"
 git merge main
+
 echo "================================================================"
 echo "BUILD INITIALIZED"
 echo "START BUILD PROCESS"
