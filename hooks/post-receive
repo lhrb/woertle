@@ -1,0 +1,33 @@
+#!/bin/sh
+cd ../
+echo "================================================================"
+echo "BUILD INITIALIZED"
+echo "START BUILD PROCESS"
+echo ""
+clj -T:build uber
+
+echo "================================================================"
+echo "SEARCH FOR RUNNING APPLICATION..."
+pid=`ps aux | grep woertle.jar | sed '/grep/d' | awk '{print $2}'`
+if [ -n $pid ]
+then
+    echo "RUNNING APPLICATION FOUND"
+    echo "INITALIZE SHUTDOWN"
+    kill $pid
+    echo "WAIT FOR TERMINATION"
+    sleep 3
+    pid2=`ps aux | grep woertle.jar | sed '/grep/d' | awk '{print $2}'`
+    if  [ -n $pid2 ]
+    then
+        echo "WAITED 3SEC FOR GRACEFUL SHUTDOWN"
+        echo "KILLING PROCESS NOW"
+        kpid=`kill -9 $pid2`
+        wait $kpid
+    fi
+    echo "PROCESS IS SHUTDOWN"
+fi
+
+echo ""
+echo "================================================================"
+echo "DEPLOY NEW BUILD"
+java -jar target/woertle.jar &

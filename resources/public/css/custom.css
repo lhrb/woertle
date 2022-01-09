@@ -1,0 +1,49 @@
+word {
+     display: flex;
+}
+
+letter-box {
+    background: #8CA5BA;
+    width: 46px;
+    height: 46px;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    margin: 1px;
+}
+
+letter-box.miss {
+    background: #8CA5BA;
+}
+
+letter-box.match {
+    background: #90be6d;
+}
+
+letter-box.contains {
+    background: #f9c74f;
+}
+
+letter {
+  margin: 0;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+}
+
+.header {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.mtop-50 {
+    margin-top: 50px;
+}
+
+.bottom {
+    position: fixed;
+    bottom:0px;
+}
