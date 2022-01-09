@@ -178,29 +178,4 @@
                         [:word/match \n]
                         [:word/miss \a]]]})
 
-
-  (def asession
-    {:session/word "banane"
-     :session/guesses [[[:word/miss 1]
-                        [:word/miss  2]
-                        [:word/miss 3]
-                        [:word/miss 4]
-                        [:word/miss 5]
-                        [:word/miss 6]]
-                       [[:word/match \b]
-                        [:word/match \a]
-                        [:word/match \n]
-                        [:word/miss \a]
-                        [:word/match \n]
-                        [:word/miss \a]]
-                       [[:word/match \b]
-                        [:word/match \a]
-                        [:word/match \n]
-                        [:word/miss \a]
-                        [:word/match \n]
-                        [:word/miss \e]]]})
-
-
-
-
   *1)
