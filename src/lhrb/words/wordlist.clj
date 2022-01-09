@@ -19,16 +19,22 @@
 (defn a-z [s]
   (superset? alphabet (set s)))
 
-(def words
- (with-open [reader (io/reader "resources/wordlist-german.txt")]
-   (doall
-    (->> (line-seq reader)
-         (filter #(between-4-and-7 (count %)))
-         (map str/lower-case)
-         (map replace-umlauts)
-         (filter a-z)
-         (filter #(between-4-and-7 (count %)))))))
+(comment
+ ;; experimental cleanup
+ ;; TODO find better word list
 
-(with-open [wrtr (io/writer "resources/words.txt")]
-  (doseq [i words]
-    (.write wrtr (str i "\n"))))
+ (def words
+   (with-open [reader (io/reader "resources/wordlist-german.txt")]
+     (doall
+      (->> (line-seq reader)
+           (filter #(between-4-and-7 (count %)))
+           (map str/lower-case)
+           (map replace-umlauts)
+           (filter a-z)
+           (filter #(between-4-and-7 (count %)))))))
+
+ (with-open [wrtr (io/writer "resources/words.txt")]
+   (doseq [i words]
+     (.write wrtr (str i "\n"))))
+
+ *e)
