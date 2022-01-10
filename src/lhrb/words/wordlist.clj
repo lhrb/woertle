@@ -23,8 +23,8 @@
  ;; experimental cleanup
  ;; TODO find better word list
 
- #_(def words
-   (with-open [reader (io/reader "resources/wordlist-german.txt")]
+ (def words
+   (with-open [reader (io/reader "resources/raw/hpwords.txt")]
      (doall
       (->> (line-seq reader)
            (filter #(between-4-and-7 (count %)))
@@ -33,7 +33,9 @@
            (filter a-z)
            (filter #(between-4-and-7 (count %)))))))
 
- #_(with-open [wrtr (io/writer "resources/words.txt")]
+ (count words)
+
+ (with-open [wrtr (io/writer "resources/words.txt")]
    (doseq [i words]
      (.write wrtr (str i "\n"))))
 
