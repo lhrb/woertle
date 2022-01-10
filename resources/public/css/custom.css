@@ -1,13 +1,16 @@
+center {
+  margin: 0 auto;
+}
+
 word {
-     display: flex;
+  display: flex;
+  justify-content: center;
 }
 
 letter-box {
     background: #8CA5BA;
     width: 46px;
     height: 46px;
-    justify-content: center;
-    text-align: center;
     position: relative;
     margin: 1px;
 }
@@ -43,7 +46,18 @@ letter {
     margin-top: 50px;
 }
 
-.bottom {
-    position: fixed;
-    bottom:0px;
+.info-box {
+  text-align: left;
+  padding: 5px;
+  border: 5px solid #277da1;
+  border-radius: 5px;
+}
+
+word2 {
+  display: flex;
+}
+
+.r {
+  display: flex;
+  justify-content: right;
 }

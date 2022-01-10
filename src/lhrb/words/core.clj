@@ -53,8 +53,8 @@
   (html/html
    (doall
     (page
-     [:div {:class "sixteen columns"}
-      [:div {:class "six columns offset-by-four"}
+     [:div
+      [:center
        (for [aguess (:session/guesses asession)]
          (row aguess))
 
@@ -63,13 +63,26 @@
           [:input {:class "button-primary" :type "submit" :value "reset"}]]
 
          [:form {:class "mtop-50" :action "/guess" :method "post"}
-          [:input {:type "text"
-                  :maxlength (str (count (:session/word asession)))
-                  :name "guess"}]
-          [:input {:class "button-primary" :type "submit" :value "submit"}]])
+          (let [length (str (count (:session/word asession)))]
+            [:input {:type "text"
+                     :maxlength length
+                     :minlength length
+                     :name "guess"}])
+          [:input {:class "button-primary" :type "submit" :value "submit"}]])]
 
-       [:form {:class "mtop-50 bottom" :action "/reset" :method "post"}
-          [:input {:class "button-primary" :type "submit" :value "reset"}]]]]))))
+
+      [:div {:class "info-box"}
+       [:h3 "Anleitung"]
+       [:p "versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
+       [:word2 [:letter-box {:class "match"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor und ist an der richtigen Stelle."]]
+       [:word2 [:letter-box {:class "contains"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor, steht aber an der falsche Stelle."]]
+       [:word2 [:letter-box {:class "miss"} [:letter "a"]][:p "Der Buchstabe kommt leider gar nicht vor"]]
+       [:br]
+       [:p "Fun fact: Es gibt insgesamt 12435 Wörter und alle Wörter kommen aus den Harry Potter Büchern und ja 'aargh' und 'aarrgh' sind natürlich gültige Worte!"]]
+
+      [:div {:class "mtop-50 r"}
+       [:form {:action "/reset" :method "post"}
+        [:input {:class "button-primary" :type "submit" :value "reset"}]]]]))))
 
 ;; -----------------------------------------------
 
