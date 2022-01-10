@@ -1,8 +1,4 @@
 #!/bin/sh
-echo "================================================================"
-echo "BLOCKING MAIN BRANCH"
-git checkout main
-
 cd ../
 echo "================================================================"
 echo "BUILD INITIALIZED"
@@ -35,7 +31,3 @@ echo ""
 echo "================================================================"
 echo "DEPLOY NEW BUILD"
 java -jar target/woertle.jar &
-echo "================================================================"
-echo "CHECKOUT IDLE BRANCH"
-cd .git/
-git checkout idle
