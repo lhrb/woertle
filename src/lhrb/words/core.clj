@@ -78,7 +78,7 @@
        [:word2 [:letter-box {:class "contains"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor, steht aber an der falsche Stelle."]]
        [:word2 [:letter-box {:class "miss"} [:letter "a"]][:p "Der Buchstabe kommt leider gar nicht vor"]]
        [:br]
-       [:p "Fun fact: Es gibt insgesamt 12435 Wörter und alle Wörter kommen aus den Harry Potter Büchern und ja 'aargh' und 'aarrgh' sind natürlich gültige Worte!"]]
+       [:p "Fun fact: Alle Wörter kommen aus den Harry Potter Büchern!"]]
 
       [:div {:class "mtop-50 r"}
        [:form {:action "/giveup" :method "post"}
