@@ -81,6 +81,9 @@
        [:p "Fun fact: Es gibt insgesamt 12435 Wörter und alle Wörter kommen aus den Harry Potter Büchern und ja 'aargh' und 'aarrgh' sind natürlich gültige Worte!"]]
 
       [:div {:class "mtop-50 r"}
+       [:form {:action "/giveup" :method "post"}
+        [:input {:class "button-primary" :type "submit" :value "Aufgeben"}]]
+
        [:form {:action "/reset" :method "post"}
         [:input {:class "button-primary" :type "submit" :value "reset"}]]]]))))
 
@@ -142,6 +145,13 @@
       ["/inspect" {:get (fn [{session :session}]
                           {:status 200
                            :body (str session)})}]
+
+      ["/giveup" {:post (fn [request]
+                          (let [asession (:session request)
+                                solution {"guess" (:session/word asession)}]
+                            {:status 303
+                             :headers {"Location" "/"}
+                             :session (update-session (assoc request :form-params solution))}))}]
 
       ["/reset" {:post (fn [_]
                         {:status 303
