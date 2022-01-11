@@ -9,6 +9,7 @@
             [reitit.ring.coercion :as coercion]
             [reitit.ring :as ring]
             [hiccup.core :as html])
+  #_(:import [org.eclipse.jetty.server.handler.gzip GzipHandler])
   (:gen-class))
 
 (def words
@@ -205,7 +206,7 @@
      (ring/create-default-handler))
     {:middleware [session/wrap-session]}))
 
-(defn- add-gzip-handler [server]
+#_(defn- add-gzip-handler [server]
   (.setHandler server
                (doto (GzipHandler.)
                  (.setIncludedMimeTypes (into-array ["text/css"
@@ -216,12 +217,13 @@
 
 (defn -main []
   (jetty/run-jetty #'app {:port 3000
-                          :join? false
-                          :configurator add-gzip-handler}))
+                          :join? false}))
 
 (comment
 
-  (def server (jetty/run-jetty #'app {:port 3000 :join? false :configurator add-gzip-handler}))
+  (def server (jetty/run-jetty #'app {:port 3000 :join? false
+                                      ;:configurator add-gzip-handler
+                                      }))
 
   (.stop server)
 
@@ -247,7 +249,5 @@
                         [:word/miss \a]
                         [:word/match \n]
                         [:word/miss \a]]]})
-
-  ;; test
 
   *1)
