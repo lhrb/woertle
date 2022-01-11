@@ -2,6 +2,10 @@ center {
   margin: 0 auto;
 }
 
+.center {
+  margin: 0 auto;
+}
+
 word {
   display: flex;
   justify-content: center;
@@ -60,4 +64,15 @@ word2 {
 .r {
   display: flex;
   justify-content: right;
+}
+
+.error {
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 8px;
+  background-color: #f9844a;
+  border: 1px solid #f9844a;
+  border-radius: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }

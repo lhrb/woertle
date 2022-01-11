@@ -73,11 +73,11 @@
                      :maxlength length
                      :minlength length
                      :name "guess"}])
-          [:input {:class "button-primary" :type "submit" :value "submit"}]])]
+          [:input {:class "button-primary" :type "submit" :value "submit"}]])
 
-      (if-let [error (get-in asession [:session/error :error/message])]
-        [:p error]
-        '())
+       (if-let [error (get-in asession [:session/error :error/message])]
+         [:div {:class "error"} error]
+         '())]
       [:div {:class "info-box"}
        [:h3 "Anleitung"]
        [:p "versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
