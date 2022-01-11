@@ -114,10 +114,15 @@
     {:session/word word
      :session/guesses [first-row]}))
 
+(defn lower-case
+  "nil safe: returns an empty string, when s is nil"
+  [s]
+  (if (nil? s) "" (str/lower-case s)))
+
 (defn update-session
   "play a round"
   [{session :session params :form-params}]
-  (let [user-guess (str/lower-case (get params "guess"))
+  (let [user-guess (lower-case (get params "guess"))
         guess (guess (:session/word session) user-guess)]
     (update session :session/guesses conj guess)))
 
@@ -148,10 +153,14 @@
 
       ["/giveup" {:post (fn [request]
                           (let [asession (:session request)
+                                ;; TODO we currently reuse the "guess" function
                                 solution {"guess" (:session/word asession)}]
-                            {:status 303
-                             :headers {"Location" "/"}
-                             :session (update-session (assoc request :form-params solution))}))}]
+                            (if (won? asession)
+                              {:status 303
+                               :headers {"Location" "/"}}
+                              {:status 303
+                               :headers {"Location" "/"}
+                               :session (update-session (assoc request :form-params solution))})))}]
 
       ["/reset" {:post (fn [_]
                         {:status 303
