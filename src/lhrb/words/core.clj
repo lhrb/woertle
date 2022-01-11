@@ -205,12 +205,23 @@
      (ring/create-default-handler))
     {:middleware [session/wrap-session]}))
 
+(defn- add-gzip-handler [server]
+  (.setHandler server
+               (doto (GzipHandler.)
+                 (.setIncludedMimeTypes (into-array ["text/css"
+                                                     "text/html"
+                                                     "text/plain"]))
+                 (.setMinGzipSize 1024)
+                 (.setHandler (.getHandler server)))))
+
 (defn -main []
-  (jetty/run-jetty #'app {:port 3000, :join? false}))
+  (jetty/run-jetty #'app {:port 3000
+                          :join? false
+                          :configurator add-gzip-handler}))
 
 (comment
 
-  (def server (jetty/run-jetty #'app {:port 3000, :join? false}))
+  (def server (jetty/run-jetty #'app {:port 3000 :join? false :configurator add-gzip-handler}))
 
   (.stop server)
 
