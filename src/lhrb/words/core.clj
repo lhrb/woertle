@@ -12,8 +12,13 @@
   (:gen-class))
 
 (def words
- (with-open [reader (io/reader "resources/words.txt")]
-   (doall (line-seq reader))))
+  (with-open [reader (io/reader "resources/words.txt")]
+    (doall (line-seq reader))))
+
+(defn word-in-list [words word]
+  ((set words) word))
+
+(def word-in-list? (partial word-in-list words))
 
 (defn won? [asession]
   (->> (last (:session/guesses asession))
@@ -70,7 +75,9 @@
                      :name "guess"}])
           [:input {:class "button-primary" :type "submit" :value "submit"}]])]
 
-
+      (if-let [error (get-in asession [:session/error :error/message])]
+        [:p error]
+        '())
       [:div {:class "info-box"}
        [:h3 "Anleitung"]
        [:p "versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
@@ -88,6 +95,21 @@
         [:input {:class "button-primary" :type "submit" :value "reset"}]]]]))))
 
 ;; -----------------------------------------------
+
+(defn handle-error
+  "an error needs to have a :error/displaycount key with a valid number
+  {:session/error {:error/message \"msg\" :error/displaycount 1}}
+  "
+  [asession]
+  (if (:session/error asession)
+   (if (< 0 (get-in asession [:session/error :error/displaycount]))
+     (update-in asession [:session/error :error/displaycount] dec)
+     (dissoc asession :session/error))
+   asession))
+
+(defn report-error [asession error-msg]
+  (assoc asession :session/error {:error/message error-msg
+                                  :error/displaycount 1}))
 
 (defn compare-letter-position
   "compares the letter at a specific position"
@@ -122,9 +144,12 @@
 (defn update-session
   "play a round"
   [{session :session params :form-params}]
-  (let [user-guess (lower-case (get params "guess"))
-        guess (guess (:session/word session) user-guess)]
-    (update session :session/guesses conj guess)))
+  (let [user-guess (lower-case (get params "guess"))]
+    (if (word-in-list? user-guess)
+      (update session
+              :session/guesses
+              conj (guess (:session/word session) user-guess))
+      (report-error session (str "Das Wort: " user-guess " kenne ich nicht.")))))
 
 (def app
   (ring/ring-handler
@@ -138,9 +163,11 @@
                         :body (get-page asession)
                         :session asession})
                      ;; just render the session
-                     {:status 200
-                      :headers {"Content-Type" "text/html"}
-                      :body (get-page session)}))}]
+                     (let [asession (handle-error session)]
+                      {:status 200
+                       :headers {"Content-Type" "text/html"}
+                       :body (get-page asession)
+                       :session asession})))}]
 
       ["/guess" {:post (fn [request]
                          {:status 303
