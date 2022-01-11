@@ -80,7 +80,7 @@
          '())]
       [:div {:class "info-box"}
        [:h3 "Anleitung"]
-       [:p "versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
+       [:p "Versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
        [:word2 [:letter-box {:class "match"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor und ist an der richtigen Stelle."]]
        [:word2 [:letter-box {:class "contains"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor, steht aber an der falsche Stelle."]]
        [:word2 [:letter-box {:class "miss"} [:letter "a"]][:p "Der Buchstabe kommt leider gar nicht vor"]]
