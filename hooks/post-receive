@@ -1,6 +1,10 @@
 #!/bin/sh
 cd ../
 echo "================================================================"
+echo "MERGE CHANGES"
+GIT='git --git-dir='$PWD'/.git --work-tree '$PWD''
+$GIT merge main
+echo "================================================================"
 echo "BUILD INITIALIZED"
 echo "START BUILD PROCESS"
 echo ""
