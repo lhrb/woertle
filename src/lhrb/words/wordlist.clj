@@ -19,24 +19,53 @@
 (defn a-z [s]
   (superset? alphabet (set s)))
 
+(defn write-to-file [filename words]
+  (with-open [wrtr (io/writer filename)]
+    (doseq [i words]
+      (.write wrtr (str i "\n")))))
+
+(defn read-file
+  ([filename]
+   (read-file filename identity))
+  ([filename xf]
+   (with-open [reader (io/reader filename)]
+     (doall (sequence xf (line-seq reader))))))
+
 (comment
- ;; experimental cleanup
- ;; TODO find better word list
+  ;; experimental cleanup
+  ;; TODO find better word list
 
- (def words
-   (with-open [reader (io/reader "resources/raw/hpwords.txt")]
-     (doall
-      (->> (line-seq reader)
-           (filter #(between-4-and-7 (count %)))
-           (map str/lower-case)
-           (map replace-umlauts)
-           (filter a-z)
-           (filter #(between-4-and-7 (count %)))))))
 
- (count words)
+  (def dic
+    (comp
+     (map str/lower-case)
+     (map replace-umlauts)
+     (filter a-z)
+     (filter #(between-4-and-7 (count %)))))
 
- (with-open [wrtr (io/writer "resources/words.txt")]
-   (doseq [i words]
-     (.write wrtr (str i "\n"))))
+  (def dictonary (read-file "resources/raw/modified-wordlist.txt" dic))
+
+  (def xf
+    (comp
+     (mapcat #(str/split % #" "))
+     (remove empty?)
+     (map #(str/replace % #"\.|\,|«|»|\?|!|;|:" ""))
+     (map str/lower-case)
+     (map replace-umlauts)
+     (filter a-z)
+     (filter #(between-4-and-7 (count %)))
+     (distinct)
+     (filter (set dictonary))))
+
+  (def words (read-file "resources/raw/all" xf))
+
+  (write-to-file "resources/words.txt" words)
+
+  (repeatedly 100 #(rand-nth words))
+
+
+
+  (str/replace ".,«»asdasd»asdf?fasdf!w" #"\.|\,|«|»|\?|!|;" "")
+
 
  *e)
