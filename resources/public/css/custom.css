@@ -57,6 +57,13 @@ letter {
   border-radius: 5px;
 }
 
+.stat-box {
+  text-align: center;
+  padding: 5px;
+  border: 3px solid #4D908E;
+  border-radius: 5px;
+}
+
 word2 {
   display: flex;
 }
