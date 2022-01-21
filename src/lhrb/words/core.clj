@@ -27,6 +27,18 @@
        (apply str)
        (= (:session/word asession))))
 
+(defn points-for-round
+  "Calculate the points reached for the number of guesses."
+  [guess-count]
+  (max 5 ;; five points just for guessing right
+       (- 100 (* 10
+                 (max 0 (dec guess-count))))))
+(comment
+  (= (points-for-round -1) 100)
+  (= (points-for-round 11) 5)
+
+  *e)
+
 ;; view ------------------------------------------
 
 (defn page [content]
@@ -55,12 +67,32 @@
                             :word/miss "miss")}
       [:letter (str letter)]])])
 
+(defn instruction-view []
+  [:div {:class "info-box mtop-50"}
+   [:h3 "Anleitung"]
+   [:p "Versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
+   [:word2 [:letter-box {:class "match"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor und ist an der richtigen Stelle."]]
+   [:word2 [:letter-box {:class "contains"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor, steht aber an der falsche Stelle."]]
+   [:word2 [:letter-box {:class "miss"} [:letter "a"]][:p "Der Buchstabe kommt leider gar nicht vor"]]
+   [:br]
+   [:p "Fun fact: Alle Wörter kommen aus den Harry Potter Büchern!"]])
+
+(defn stats-view [asession]
+  (let [{{:stats/keys [points guesses words]} :session/stats} asession]
+    [:div {:class "stat-box row"}
+     [:div {:class "four columns"} (str "Punkte: " points)]
+     [:div {:class "four columns"} (str "Versuche insgesamt: " guesses)]
+     [:div {:class "four columns"} (str "Erratene Wörter: " words)]]))
+
 (defn get-page [asession]
   (html/html
    (doall
     (page
      [:div
       [:center
+       (row (mapv vector
+                  (repeat :word/miss)
+                  (range 1 (inc (count (:session/word asession))))))
        (for [aguess (:session/guesses asession)]
          (row aguess))
 
@@ -79,14 +111,13 @@
        (if-let [error (get-in asession [:session/error :error/message])]
          [:div {:class "error"} error]
          '())]
-      [:div {:class "info-box"}
-       [:h3 "Anleitung"]
-       [:p "Versuche das Wort zu erraten. Dabei helfen dir die Farben:"]
-       [:word2 [:letter-box {:class "match"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor und ist an der richtigen Stelle."]]
-       [:word2 [:letter-box {:class "contains"} [:letter "a"]][:p "Der Buchstabe kommt im Wort vor, steht aber an der falsche Stelle."]]
-       [:word2 [:letter-box {:class "miss"} [:letter "a"]][:p "Der Buchstabe kommt leider gar nicht vor"]]
-       [:br]
-       [:p "Fun fact: Alle Wörter kommen aus den Harry Potter Büchern!"]]
+
+      (stats-view asession)
+
+      (if (= 0 (get-in asession [:session/stats :stats/points]))
+        ;; first round no points? show the instructions
+        (instruction-view)
+       '())
 
       [:div {:class "mtop-50 r"}
        [:form {:action "/giveup" :method "post"}
@@ -131,25 +162,39 @@
 (defn new-session
   "creates a new game"
   [word]
-  (let [first-row (mapv vector
-                        (repeat :word/miss)
-                        (range 1 (inc (count word))))]
-    {:session/word word
-     :session/guesses [first-row]}))
+  {:session/word word
+   :session/guesses []
+   :session/stats {:stats/points 0
+                   :stats/guesses 0
+                   :stats/words 0}})
 
 (defn lower-case
   "nil safe: returns an empty string, when s is nil"
   [s]
   (if (nil? s) "" (str/lower-case s)))
 
+(defn handle-stats
+  "when we completed a round we want to calculate the points
+  and attach the new count to the session"
+  [asession]
+  (if (won? asession)
+    (let [guesses (count (:session/guesses asession))
+          points (points-for-round guesses)]
+      (-> asession
+       (update-in [:session/stats :stats/points] + points)
+       (update-in [:session/stats :stats/words] inc)
+       (update-in [:session/stats :stats/guesses] + guesses)))
+    asession))
+
 (defn update-session
   "play a round"
   [{session :session params :form-params}]
   (let [user-guess (lower-case (get params "guess"))]
     (if (word-in-list? user-guess)
-      (update session
-              :session/guesses
-              conj (guess (:session/word session) user-guess))
+      (-> session
+          (update :session/guesses conj (guess (:session/word session) user-guess))
+          (handle-stats))
+
       (report-error session (str "Das Wort: " user-guess " kenne ich nicht.")))))
 
 (def app
@@ -190,10 +235,12 @@
                                :headers {"Location" "/"}
                                :session (update-session (assoc request :form-params solution))})))}]
 
-      ["/reset" {:post (fn [_]
+      ["/reset" {:post (fn [{asession :session}]
                         {:status 303
                          :headers {"Location" "/"}
-                         :session (new-session (rand-nth words))})}]]
+                         :session (-> asession
+                                      (assoc :session/word (rand-nth words))
+                                      (assoc :session/guesses []))})}]]
 
       {:data {:muuntaja m/instance
       	      :middleware [params/wrap-params
@@ -232,12 +279,12 @@
 
   (def asession
     {:session/word "banane"
-     :session/guesses [[[:word/miss 1]
-                        [:word/miss  2]
-                        [:word/miss 3]
-                        [:word/miss 4]
-                        [:word/miss 5]
-                        [:word/miss 6]]
+     :session/guesses [[[:word/match \b]
+                        [:word/match \a]
+                        [:word/match \n]
+                        [:word/miss \a]
+                        [:word/match \n]
+                        [:word/miss \a]]
                        [[:word/match \b]
                         [:word/match \a]
                         [:word/match \n]
@@ -249,6 +296,9 @@
                         [:word/match \n]
                         [:word/miss \a]
                         [:word/match \n]
-                        [:word/miss \a]]]})
+                        [:word/miss \e]]]
+     :session/stats {:stats/points 0
+                     :stats/guesses 0
+                     :stats/words 0}})
 
   *1)
