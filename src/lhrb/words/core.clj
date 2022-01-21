@@ -126,6 +126,23 @@
        [:form {:action "/reset" :method "post"}
         [:input {:class "button-primary" :type "submit" :value "reset"}]]]]))))
 
+(defn give-up-view [asession]
+  (html/html
+   (doall
+    (page
+     [:div
+      [:center
+       (row (mapv vector
+                  (repeat :word/miss)
+                  (range 1 (inc (count (:session/word asession))))))
+       (for [aguess (:session/guesses asession)]
+         (row aguess))
+
+       [:form {:class "mtop-50" :action "/reset" :method "post"}
+        [:input {:class "button-primary" :type "submit" :value "reset"}]]]
+
+      (stats-view asession)]))))
+
 ;; -----------------------------------------------
 
 (defn handle-error
@@ -177,14 +194,16 @@
   "when we completed a round we want to calculate the points
   and attach the new count to the session"
   [asession]
-  (if (won? asession)
-    (let [guesses (count (:session/guesses asession))
-          points (points-for-round guesses)]
-      (-> asession
-       (update-in [:session/stats :stats/points] + points)
-       (update-in [:session/stats :stats/words] inc)
-       (update-in [:session/stats :stats/guesses] + guesses)))
-    asession))
+  (->
+   (if (won? asession)
+     (let [guesses (count (:session/guesses asession))
+           points (points-for-round guesses)]
+       (-> asession
+           (update-in [:session/stats :stats/points] + points)
+           (update-in [:session/stats :stats/words] inc)))
+     asession)
+   ;; always increase the counter, when we get here
+   (update-in [:session/stats :stats/guesses] inc)))
 
 (defn update-session
   "play a round"
@@ -224,16 +243,18 @@
                           {:status 200
                            :body (str session)})}]
 
-      ["/giveup" {:post (fn [request]
-                          (let [asession (:session request)
-                                ;; TODO we currently reuse the "guess" function
-                                solution {"guess" (:session/word asession)}]
-                            (if (won? asession)
-                              {:status 303
-                               :headers {"Location" "/"}}
-                              {:status 303
-                               :headers {"Location" "/"}
-                               :session (update-session (assoc request :form-params solution))})))}]
+      ["/giveup" {:post (fn [{asession :session}]
+                          (if (won? asession)
+                            {:status 303
+                             :headers {"Location" "/"}}
+                            {:status 200
+                             :headers {"Content-Type" "text/html"}
+                             :body (get-page
+                                    (update asession :session/guesses conj (guess (:session/word asession)
+                                                                                  (:session/word asession))))
+                             :session (-> asession
+                                          (assoc :session/word "revelio")
+                                          (assoc :session/guesses []))}))}]
 
       ["/reset" {:post (fn [{asession :session}]
                         {:status 303
