@@ -89,25 +89,30 @@
 
 (defn- get-conde-clause
   "helper to resolve clauses where we know that the word
-  'contains' a letter but we don't know the position"
-  [syms letter indexes]
-  (let [clauses (if (seq indexes)
-                  (for [i indexes]
-                    `[(== ~(syms i) ~letter)])
-                  '([succeed]))]
-    `(conde ~@clauses)))
+  'contains' a letter but we don't know the position
+
+  admittedly too many arguments"
+  [syms letter in-matches indexes]
+  (if (empty? indexes)
+    `(conde [succeed])
+   (let [clauses (for [i indexes]
+                   `[(== ~(syms i) ~letter)])
+         clauses (if (in-matches letter)
+                   (cons `[succeed] clauses)
+                   clauses)]
+     `(conde ~@clauses))))
 
 (defn get-contains-clauses
   ":word/contains gives us two informations:
   1. at the position it appears we expect another letter
   2. the letter is at one of the other positions
   we compile this information to a clause in our logic language"
-  [syms remaining-indexes idx-contains]
+  [syms remaining-indexes in-matches idx-contains]
   (mapcat
    (fn [{:letter/keys [idx contains]}]
      (mapcat
       (fn [letter]
-        (let [conde-clauses (get-conde-clause syms letter remaining-indexes)]
+        (let [conde-clauses (get-conde-clause syms letter in-matches remaining-indexes)]
           `((!= ~(syms idx) ~letter)
             ~conde-clauses)))
       contains))
@@ -125,6 +130,8 @@
         matches (map (fn [{:letter/keys [idx match]}]
                        `(== ~(syms idx) ~match))
                      idx-match)
+        ;; needed for special case 'contains' but is also a match
+        in-matches (set (map :letter/match idx-match))
 
         ;; for all remaining positions we have to check all
         ;; letters from the remaining alphabet
@@ -136,12 +143,13 @@
                               remaining-indexes)
 
         idx-contains (index-contains idx-match-contains)
-        contains-clauses (get-contains-clauses syms remaining-indexes idx-contains)]
+        contains-clauses (get-contains-clauses syms remaining-indexes in-matches idx-contains)]
     `(run* ~syms
        ~@matches
        ~@contains-clauses
-       ~@letters-to-check)))
-
+       ~@letters-to-check
+       (project ~syms
+                (membero (~str ~@syms) ~db)))))
 (comment
   (def guesses
     [[[:word/miss \s] [:word/miss \i] [:word/miss \c] [:word/miss \h]]
@@ -162,6 +170,9 @@
                        `(== ~(syms idx) ~match))
          idx-match))
 
+  ;; needed for special case 'contains' but is also a match
+  (def in-matches (set (map :letter/match idx-match)))
+
   ;; for all remaining positions we have to check all
   ;; letters from the remaining alphabet
   (def remaining-indexes
@@ -174,7 +185,7 @@
          remaining-indexes))
 
   (def idx-contains (index-contains idx-match-contains))
-  (def contains-clauses (get-contains-clauses syms remaining-indexes idx-contains))
+  (def contains-clauses (get-contains-clauses syms remaining-indexes in-matches idx-contains))
 
 
   (macroexpand-1 '(compile-to-logic
@@ -189,8 +200,20 @@
                   [[:word/miss \d] [:word/match \e] [:word/match \n] [:word/match \n]]])
 
 
-    (require '[lhrb.words.core :as c])
+  (require '[lhrb.words.core :as c])
 
   (c/guess "wenn"  "denn")
+
+  (run* [a b c d]
+    (== b \e)
+    (== c \n)
+    (== d \n)
+    (!= c \e)
+    (conde [(clojure.core.logic/== a \e)] [succeed])
+    (membero
+     a
+     [\b \e \f \g \j \k \l \n \o \p \q \r \u \v \w \x \y \z])
+    (project [a b c d]
+             (membero (str a b c d) db)))
 
   ,)
