@@ -112,6 +112,7 @@
    (fn [{:letter/keys [idx contains]}]
      (mapcat
       (fn [letter]
+        ;; TODO remove current index from "remaining-indexes"
         (let [conde-clauses (get-conde-clause syms letter in-matches remaining-indexes)]
           `((!= ~(syms idx) ~letter)
             ~conde-clauses)))
