@@ -142,32 +142,6 @@
        ~@contains-clauses
        ~@letters-to-check)))
 
-
-(defmacro to-logic [x]
-  (let [s (vec (seq x))
-        syms (vec (for [y (seq x)]
-                    (gensym y)))
-        body (map (fn [sy] `(membero ~sy ~s)) syms)]
-    `(run* ~syms
-       ~@body)))
-
-(def syms
- (vec (for [y (range 0 4)]
-        (gensym y))))
-
-(defmacro gl [guesses]
-  (let [syms (vec (for [y (range 0 4)] (gensym y)))
-        matches (map (fn [{:letter/keys [idx match]}]
-                       `(== ~(syms idx) ~match))
-                     idx-match)]
-    `(run ~syms
-       ~@matches)))
-
-(macroexpand-1 '(gl guesses))
-
-
-
-
 (comment
   (def guesses
     [[[:word/miss \s] [:word/miss \i] [:word/miss \c] [:word/miss \h]]
@@ -214,49 +188,9 @@
                   [[:word/miss \a] [:word/miss \t] [:word/contains \e] [:word/miss \m]]
                   [[:word/miss \d] [:word/match \e] [:word/match \n] [:word/match \n]]])
 
-  (compile-to-logic guesses)
 
-  (defmacro dbg [arr]
-    (let [num (count (first arr))]
-      num))
-  (def a [[1 2]])
-  (dbg a)
-
-  (def alph (vec alphabet))
-  (run* [a b c d]
-    (membero a alph)
-    (membero b [\w \e])
-    (== c \n)
-    (== d \n)
-    (project [a b c d]
-             (membero (str a b c d) db)))
-
-  (require '[lhrb.words.core :as c])
+    (require '[lhrb.words.core :as c])
 
   (c/guess "wenn"  "denn")
-
-  (run* [a b c d]
-    (!= c \e)
-    (conde
-     [(== a \e)]
-     [(== b \e)]
-     [(== d \e)])
-    (== c \a))
-
-
-  (defmacro aha []
-    `(run* [q#]
-       (conde
-        [(== q# \a)]
-        [(== q# \b)])))
-
-  (aha)
-
-  (run* [q]
-    (== q 1)
-    (conde
-     [succeed]))
-
-
 
   ,)
