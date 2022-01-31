@@ -39,21 +39,33 @@
 
   *e)
 
-(defn compare-letter-position
-  "compares the letter at a specific position"
-  [letters original guess]
-  (cond
-    (= original guess)  :word/match
-    (letters guess)     :word/contains
-    :else               :word/miss))
+(defn- count-matches
+  [current-letter matches]
+  (->> matches
+       (filter vector?)
+       (filter (fn [[_ letter]] (= current-letter letter)))
+       (count)))
 
-(defn diff-word
-  [original guess]
-  (let [comp (partial compare-letter-position (set original))]
-    (mapv comp (seq original) (seq guess))))
-
-(defn guess [word guess]
-  (mapv vector (diff-word word guess) (seq guess)))
+(defn guess
+  "returns how many letters matched (:word/match), are contained (:word/contains)
+  in the word or not in the word at all (:word/miss)"
+  [word guessw]
+  (let [freq (frequencies word)
+        ;; first we check for exact matches
+        matches (mapv (fn [x y] (if (= x y) [:word/match y] y))
+                      (seq word) (seq guessw))]
+    ;; When we found a letter twice but its only in the word once
+    ;; we don't want to mark it as contains.
+    (reduce (fn [acc elem]
+              (if (vector? elem)
+                (conj acc elem)
+                (conj acc
+                      (if (< 0
+                             (- (get freq elem)
+                                (count-matches elem (concat matches acc))))
+                        [:word/contains elem]
+                        [:word/miss elem]))))
+            [] matches)))
 
 ;; view ------------------------------------------
 
