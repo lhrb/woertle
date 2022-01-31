@@ -39,6 +39,22 @@
 
   *e)
 
+(defn compare-letter-position
+  "compares the letter at a specific position"
+  [letters original guess]
+  (cond
+    (= original guess)  :word/match
+    (letters guess)     :word/contains
+    :else               :word/miss))
+
+(defn diff-word
+  [original guess]
+  (let [comp (partial compare-letter-position (set original))]
+    (mapv comp (seq original) (seq guess))))
+
+(defn guess [word guess]
+  (mapv vector (diff-word word guess) (seq guess)))
+
 ;; view ------------------------------------------
 
 (defn page [content]
@@ -159,22 +175,6 @@
 (defn report-error [asession error-msg]
   (assoc asession :session/error {:error/message error-msg
                                   :error/displaycount 1}))
-
-(defn compare-letter-position
-  "compares the letter at a specific position"
-  [letters original guess]
-  (cond
-    (= original guess)  :word/match
-    (letters guess)     :word/contains
-    :else               :word/miss))
-
-(defn diff-word
-  [original guess]
-  (let [comp (partial compare-letter-position (set original))]
-    (mapv comp (seq original) (seq guess))))
-
-(defn guess [word guess]
-  (mapv vector (diff-word word guess) (seq guess)))
 
 (defn new-session
   "creates a new game"
