@@ -12,21 +12,15 @@
 (defn not-appearing-letters
   "returns letters which do not appear in the word. Generated from guesses"
   [guesses]
-  (->> guesses
-       flatten
-       (partition 2)
-       (filter #(= :word/miss (first %)))
-       (map second)))
+  (mapcat (fn [w] (for [[k v] w :when (= :word/miss k)] v)) guesses))
 
 (defn available-letters
   [not-appearing-letters]
   (clojure.set/difference alphabet (set not-appearing-letters)))
 
-(defn remaining-alph [guesses]
-  (->> guesses
-       (not-appearing-letters)
-       (available-letters)
-       (vec)))
+(defn remaining-alph
+  [guesses]
+  (->> guesses (not-appearing-letters) (available-letters) (vec)))
 
 (defn transpose [m]
   (apply mapv vector m))
