@@ -7,9 +7,7 @@
 
 (def words
   (with-open [reader (io/reader "resources/words.txt")]
-    (doall (filter #(= 4 (count %)) (line-seq reader)))))
-
-(def db (into [] words))
+    (doall (line-seq reader))))
 
 (defn not-appearing-letters
   "returns letters which do not appear in the word. Generated from guesses"
@@ -102,6 +100,9 @@
                    clauses)]
      `(conde ~@clauses))))
 
+(defn applystr [str-coll]
+  (apply str str-coll))
+
 (defn get-contains-clauses
   ":word/contains gives us two informations:
   1. at the position it appears we expect another letter
@@ -123,6 +124,9 @@
   [guesses]
   (let [alph (remaining-alph guesses)
         num-letters (count (first guesses))
+
+        db (apply hash-set (filter #(= (count %) num-letters) words))
+        xf `(comp (map applystr) (filter ~db))
         ;; logic var wildcards
         syms (vec (for [s (range 0 num-letters)] (gensym s)))
         ;; first we compile the clauses which contain matches.
@@ -132,6 +136,7 @@
                        `(== ~(syms idx) ~match))
                      idx-match)
         ;; needed for special case 'contains' but is also a match
+        ;; TODO find out if still needed?
         in-matches (set (map :letter/match idx-match))
 
         ;; for all remaining positions we have to check all
@@ -145,12 +150,13 @@
 
         idx-contains (index-contains idx-match-contains)
         contains-clauses (get-contains-clauses syms remaining-indexes in-matches idx-contains)]
-    `(run* ~syms
-       ~@matches
-       ~@contains-clauses
-       ~@letters-to-check
-       (project ~syms
-                (membero (~str ~@syms) ~db)))))
+    `(transduce ~xf conj []
+      (run* ~syms
+        ~@matches
+        ~@contains-clauses
+        ~@letters-to-check))))
+
+
 (comment
   (def guesses
     [[[:word/miss \s] [:word/miss \i] [:word/miss \c] [:word/miss \h]]
@@ -203,18 +209,32 @@
 
   (require '[lhrb.words.core :as c])
 
-  (c/guess "wenn"  "denn")
+  (c/guess "lodernd" "erleben")
 
-  (run* [a b c d]
-    (== b \e)
-    (== c \n)
-    (== d \n)
-    (!= c \e)
-    (conde [(clojure.core.logic/== a \e)] [succeed])
-    (membero
-     a
-     [\b \e \f \g \j \k \l \n \o \p \q \r \u \v \w \x \y \z])
-    (project [a b c d]
-             (membero (str a b c d) db)))
+  (macroexpand-1
+   '(compile-to-logic [[[:word/miss \s]
+                       [:word/miss \c]
+                       [:word/miss \h]
+                       [:word/contains \n]
+                       [:word/miss \a]
+                       [:word/miss \t]
+                        [:word/miss \z]]]))
+
+  (def res3
+    (compile-to-logic [[[:word/miss \s]
+                        [:word/miss \c]
+                        [:word/miss \h]
+                        [:word/contains \n]
+                        [:word/miss \a]
+                        [:word/miss \t]
+                        [:word/miss \z]]
+                       [[:word/miss \e]
+                        [:word/contains \r]
+                        [:word/contains \l]
+                        [:word/match \e]
+                        [:word/miss \b]
+                        [:word/miss \e]
+                        [:word/contains \n]]]))
+
 
   ,)
