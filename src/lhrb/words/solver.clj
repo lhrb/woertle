@@ -25,19 +25,36 @@
                            (update m k (fnil into #{}) (map second v))) {} xs)))))
 
 (defn build-index
-  "returns an index first mapping is the position of the char
-  followed by the char e.g. {0 {a #{'aber'}}
-                             1 {b #{'aber}}}"
+  "returns an index:
+  * first mapping is the letter count
+  * second the position of the char
+  * third the char e.g. {4 {0 {a #{'aber'}}
+                             1 {b #{'aber}}}}"
   [words]
-  (reduce
-   (fn [index word]
-     (->> (seq word)
-          (map-indexed (fn [pos letter] [pos letter]))
-          (reduce (fn [m e]
-                    (update-in m e (fnil conj #{}) word))
-                  index)))
+  (reduce-kv
+   (fn [m k v]
+     (assoc m k (reduce
+                 (fn [index word]
+                   (->> (seq word)
+                        (map-indexed (fn [pos letter] [pos letter]))
+                        (reduce (fn [m e]
+                                  (update-in m e (fnil conj #{}) word))
+                                index)))
+                 {}
+                 v)))
    {}
-   words))
+   (group-by count words)))
+
+(defn ismatch
+    [db w pos letter]
+    (fn [env]
+      (let [w (walk env w)]
+        (if (lvar? w)
+          (to-stream
+           (for [word (get-in db [pos letter])]
+             (unify env w word)))
+          env))))
+
 
 (comment
   (def guesses
@@ -51,27 +68,13 @@
   (c/guess "verquer" "kroeter")
   "draco" "maden"
 
+  (def db (get (build-index words) 4))
+
+  (run* [w]
+     (ismatch db w 0 \a)
+     (fresh [w2]
+       (ismatch db w2 1 \m)
+       (== w w2)))
+
 
   ,)
-
-
-
-(comment
- (def db (build-index w))
-
- (get-in db [0 \a])
-
- (defn ismatch [w pos letter]
-   (fn [env]
-     (let [w (walk env w)]
-       (if (lvar? w)
-         (to-stream
-          (for [word (get-in db [pos letter])]
-            (unify env w word)))
-         env))))
-
- (run* [w]
-   (ismatch w 0 \a)
-   (ismatch w 1 \m))
-
- (build-index w))
