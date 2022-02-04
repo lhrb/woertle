@@ -4,7 +4,7 @@
             [clojure.core.logic.protocols :refer [walk]]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.set :refer [difference]]))
+            [clojure.set :refer [difference intersection]]))
 
 (def alphabet (set (map char (range 97 123))))
 
@@ -47,20 +47,28 @@
    {}
    (group-by count words)))
 
-(defn build-index2
+(defn- build-index-per-letter
+  [words f]
+  (reduce-kv
+   (fn [m k v]
+     (assoc m k
+            (reduce
+             (fn [acc elem]
+               (assoc acc elem
+                      (set (f #(str/includes? % (str elem)) v))))
+             {} alphabet)))
+   {}
+   (group-by count words)))
+
+(defn build-contains-index
   "* first mapping is the letter count
    * second a mapping letter -> all words which contains the letter"
   [words]
- (reduce-kv
-  (fn [m k v]
-    (assoc m k
-           (reduce
-            (fn [acc elem]
-              (assoc acc elem
-                     (set (filter #(str/includes? % (str elem)) v))))
-            {} alphabet)))
-  {}
-  (group-by count words)))
+ (build-index-per-letter words filter))
+
+(defn build-without-index
+  [words]
+  (build-index-per-letter words remove))
 
 (defn ismatch
     [db w pos letter]
@@ -72,25 +80,8 @@
              (unify env w word)))
           env))))
 
-
-
-(comment
-  (def guesses
-    [[[:word/miss \s] [:word/miss \i] [:word/miss \c] [:word/miss \h]]
-     [[:word/miss \a] [:word/miss \t] [:word/contains \e] [:word/miss \m]]
-     [[:word/miss \d] [:word/match \e] [:word/match \n] [:word/match \n]]])
-
-
-  (require '[lhrb.words.core :as c])
-
-  (c/guess "verquer" "kroeter")
-  "draco" "maden"
-
-  (def db (get (build-index words) 4))
-  (def db2 (get (build-index2 words) 4))
-
-
-  (defn containo [w pos letter]
+(defn containo
+    [db db2 w pos letter]
     (fn [env]
       (let [w (walk env w)]
         (if (lvar? w)
@@ -101,18 +92,54 @@
              (unify env w word)))
           env))))
 
+(defn missingo [db w letters]
+    (fn [env]
+      (let [w (walk env w)]
+        (if (lvar? w)
+          (to-stream
+           (for [word (apply intersection
+                             (map #(get db %) letters))]
+             (unify env w word)))
+          env))))
+
+(comment
+  (def guesses
+    [[[:word/miss \s] [:word/miss \i] [:word/miss \c] [:word/miss \h]]
+     [[:word/miss \a] [:word/miss \t] [:word/contains \e] [:word/miss \m]]
+     [[:word/miss \d] [:word/match \e] [:word/match \n] [:word/match \n]]])
+
+  (require '[lhrb.words.core :as c])
+
+  (c/guess "verquer" "kroeter")
+  "draco" "maden"
+
+  (def db (get (build-index words) 4))
+  (def db2 (get (build-contains-index words) 4))
+  (def db3 (get (build-without-index words) 4))
+
+  (intersection
+   (get db3 \a)
+   (get db3 \u)
+   (get db3 \e))
+
   (run* [w]
-     (ismatch db w 0 \a)
-     (fresh [w2]
+     (fresh [w2 w3]
        (ismatch db w2 1 \m)
-       (fresh [w3]
-         (containo w3 2 \s)
-         (== w w2)
-         (== w w3))))
+       (ismatch db w 0 \a)
+       (containo db db2 w3 2 \s)
+       (== w w2)
+       (== w w3)))
 
 
   (run* [w]
     (containo w 0 \a))
+
+  (run* [w]
+    (fresh [w1 w2]
+      (missingo db3 w1 [\a \e \u])
+      (ismatch db w2 0 \c)
+      (== w w1)
+      (== w w2)))
 
   (difference
    (get-in db2 [\a])
@@ -121,8 +148,5 @@
   (difference #{1 2} #{1 3})
 
   (group-by set words)
-
-
-
 
   ,)
