@@ -70,35 +70,39 @@
   [words]
   (build-index-per-letter words remove))
 
+(def ^:dynamic *db* (build-index words))
+(def ^:dynamic *db2* (build-contains-index words))
+(def ^:dynamic *db3* (build-without-index words))
+
 (defn ismatch
-    [db w pos letter]
+    [w wlc pos letter]
     (fn [env]
       (let [w (walk env w)]
         (if (lvar? w)
           (to-stream
-           (for [word (get-in db [pos letter])]
+           (for [word (get-in *db* [wlc pos letter])]
              (unify env w word)))
           env))))
 
 (defn containo
-    [db db2 w pos letter]
+    [w wlc pos letter]
     (fn [env]
       (let [w (walk env w)]
         (if (lvar? w)
           (to-stream
            (for [word (difference
-                       (get-in db2 [letter])
-                       (get-in db [pos letter]))]
+                       (get-in *db2* [wlc letter])
+                       (get-in *db* [wlc pos letter]))]
              (unify env w word)))
           env))))
 
-(defn missingo [db w letters]
+(defn missingo [w wlc letters]
     (fn [env]
       (let [w (walk env w)]
         (if (lvar? w)
           (to-stream
            (for [word (apply intersection
-                             (map #(get db %) letters))]
+                             (map #(get-in *db3* [wlc %]) letters))]
              (unify env w word)))
           env))))
 
@@ -108,45 +112,44 @@
      [[:word/miss \a] [:word/miss \t] [:word/contains \e] [:word/miss \m]]
      [[:word/miss \d] [:word/match \e] [:word/match \n] [:word/match \n]]])
 
+
   (require '[lhrb.words.core :as c])
 
   (c/guess "verquer" "kroeter")
   "draco" "maden"
 
-  (def db (get (build-index words) 4))
-  (def db2 (get (build-contains-index words) 4))
-  (def db3 (get (build-without-index words) 4))
-
-  (intersection
-   (get db3 \a)
-   (get db3 \u)
-   (get db3 \e))
-
   (run* [w]
      (fresh [w2 w3]
-       (ismatch db w2 1 \m)
-       (ismatch db w 0 \a)
-       (containo db db2 w3 2 \s)
+       (ismatch w2 4 1 \m)
+       (ismatch w 4 0 \a)
+       (containo w3 4 2 \s)
        (== w w2)
        (== w w3)))
 
-
-  (run* [w]
-    (containo w 0 \a))
-
   (run* [w]
     (fresh [w1 w2]
-      (missingo db3 w1 [\a \e \u])
-      (ismatch db w2 0 \c)
+      (missingo w1 4 [\a \e \u])
+      (containo w2 4 1 \c)
       (== w w1)
       (== w w2)))
-
+*db2*
   (difference
    (get-in db2 [\a])
-   (get-in db [0 \a]))
+   (get-in *db* [0 \a]))
 
   (difference #{1 2} #{1 3})
 
   (group-by set words)
+
+  (defmacro compile [guesses]
+  (let [db (get idx1 7)
+        db2 (get idx2 7)
+        db3 (get idx3 7)]
+    `(run* ['w]
+      (fresh [w1 w2]
+        (missingo ~db3 w1 [\a \e \u])
+        (containo ~db ~db2 w2 1 \c)
+        (== w w1)
+        (== w w2)))))
 
   ,)
